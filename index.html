@@ -67,6 +67,35 @@
             }
         });
 
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        // Touch event listeners for mobile input
+        document.addEventListener('touchstart', (event) => {
+            touchStartX = event.touches[0].clientX;
+            touchStartY = event.touches[0].clientY;
+        });
+
+        document.addEventListener('touchmove', (event) => {
+            const touchEndX = event.touches[0].clientX;
+            const touchEndY = event.touches[0].clientY;
+
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+
+            // Adjust the cube's position based on touch movement
+            cube.position.x += deltaX * 0.01; // Adjust sensitivity as needed
+            cube.position.y -= deltaY * 0.01; // Adjust sensitivity as needed
+
+            // Update start positions for the next move
+            touchStartX = touchEndX;
+            touchStartY = touchEndY;
+        });
+
+        document.addEventListener('touchend', () => {
+            // Optionally handle touch end if needed
+        });
+
         // Array to hold falling objects
         const fallingObjects = [];
 
@@ -248,6 +277,37 @@
 
         // Create a new falling object at the current interval
         let fallingObjectInterval = setInterval(createFallingObject, creationInterval);
+
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+
+        // Mouse event listeners for desktop input
+        document.addEventListener('mousedown', (event) => {
+            isDragging = true;
+            previousMousePosition = { x: event.clientX, y: event.clientY };
+        });
+
+        document.addEventListener('mousemove', (event) => {
+            if (isDragging) {
+                const deltaX = event.clientX - previousMousePosition.x;
+                const deltaY = event.clientY - previousMousePosition.y;
+
+                // Adjust the cube's position based on mouse movement
+                cube.position.x += deltaX * 0.01; // Adjust sensitivity as needed
+                cube.position.y -= deltaY * 0.01; // Adjust sensitivity as needed
+
+                previousMousePosition = { x: event.clientX, y: event.clientY };
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        // Prevent default behavior to ensure smooth dragging
+        document.addEventListener('dragstart', (event) => {
+            event.preventDefault();
+        });
     </script>
 </body>
 </html>
