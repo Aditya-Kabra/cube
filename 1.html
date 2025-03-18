@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Three.js Game</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Create a scene
+        const scene = new THREE.Scene();
+
+        // Create a camera
+        const camera = new THREE.PerspectiveCamera(
+            75, // Field of view
+            window.innerWidth / window.innerHeight, // Aspect ratio
+            0.1, // Near clipping plane
+            1000 // Far clipping plane
+        );
+
+        // Position the camera
+        camera.position.z = 5;
+
+        // Create a renderer
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        // Attach the renderer to the document
+        document.body.appendChild(renderer.domElement);
+
+        // Create a smaller cube geometry
+        const geometry = new THREE.BoxGeometry(0.3, 0.3, 0.3); // Reduced initial size
+
+        // Create a basic material and set its color
+        const material = new THREE.MeshBasicMaterial({ color: 0x1e90ff }); // Dodger blue
+
+        // Create a mesh with the geometry and material
+        const cube = new THREE.Mesh(geometry, material);
+
+        // Position the cube lower on the screen
+        cube.position.y = -2; // Adjust this value to move the cube lower
+
+        // Add the cube to the scene
+        scene.add(cube);
+
+        // Player movement speed
+        const moveSpeed = 0.4; // Increased speed
+
+        // Define a set of distinguishable colors
+        const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff, 0x00ffff];
+
+        // Event listeners for keyboard input
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowLeft') {
+                cube.position.x -= moveSpeed;
+            } else if (event.key === 'ArrowRight') {
+                cube.position.x += moveSpeed;
+            } else if (event.key === 'ArrowUp') {
+                cube.position.y += moveSpeed; // Move up
+            } else if (event.key === 'ArrowDown') {
+                cube.position.y -= moveSpeed; // Move down
+            }
+        });
+
+        // Array to hold falling objects
+        const fallingObjects = [];
+
+        // Initialize score
+        let score = 0;
+
+        // Create a score display
+        const scoreElement = document.createElement('div');
+        scoreElement.style.position = 'absolute';
+        scoreElement.style.top = '10px';
+        scoreElement.style.left = '10px';
+        scoreElement.style.color = 'white';
+        scoreElement.style.fontSize = '20px';
+        document.body.appendChild(scoreElement);
+
+        // Function to update the score display
+        function updateScoreDisplay() {
+            scoreElement.innerHTML = `Score: ${score}`;
+        }
+
+        // Function to change the cube's color periodically
+        function changeCubeColor() {
+            const newColor = colors[Math.floor(Math.random() * colors.length)];
+            cube.material.color.set(newColor);
+        }
+
+        // Change the cube's color every 5 seconds
+        setInterval(changeCubeColor, 5000);
+
+        // Function to create a multicolored falling object with random sizes
+        function createFallingObject() {
+            const radius = Math.random() * 0.3 + 0.1; // Random radius between 0.1 and 0.4
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            const geometry = new THREE.SphereGeometry(radius, 32, 32);
+            const material = new THREE.MeshBasicMaterial({ color: color });
+            const sphere = new THREE.Mesh(geometry, material);
+
+            // Set initial position
+            sphere.position.x = (Math.random() - 0.5) * 10; // Random x position
+            sphere.position.y = 5; // Start above the view
+
+            scene.add(sphere);
+            fallingObjects.push(sphere);
+        }
+
+        // Falling speed
+        let fallingSpeed = 0.01; // Start with a smaller value for slower falling speed
+        let creationInterval = 1000; // Interval for creating new objects
+
+        // Update falling objects
+        function updateFallingObjects() {
+            for (let i = fallingObjects.length - 1; i >= 0; i--) {
+                const obj = fallingObjects[i];
+                obj.position.y -= fallingSpeed; // Move down
+
+                // Check if the object is out of view
+                if (obj.position.y < -5) {
+                    scene.remove(obj);
+                    fallingObjects.splice(i, 1);
+                    score++; // Increase score for each avoided object
+                    updateScoreDisplay(); // Update the score display
+                }
+            }
+        }
+
+        // Create a restart button
+        const restartButton = document.createElement('button');
+        restartButton.innerHTML = 'Restart Game';
+        restartButton.style.position = 'absolute';
+        restartButton.style.top = '50px';
+        restartButton.style.left = '10px';
+        restartButton.style.padding = '10px';
+        restartButton.style.fontSize = '16px';
+        restartButton.style.zIndex = '10'; // Ensure it's on top
+        document.body.appendChild(restartButton);
+
+        // Attach the reset function to the button
+        restartButton.addEventListener('click', resetGame);
+
+        // Function to reset the game
+        function resetGame() {
+            // Remove all falling objects from the scene
+            fallingObjects.forEach(obj => scene.remove(obj));
+            fallingObjects.length = 0; // Clear the array
+
+            // Reset score and update display
+            score = 0;
+            updateScoreDisplay();
+
+            // Reset falling speed and creation interval
+            fallingSpeed = 0.01;
+            creationInterval = 1000;
+
+            // Restart the falling object creation interval
+            clearInterval(fallingObjectInterval);
+            fallingObjectInterval = setInterval(createFallingObject, creationInterval);
+
+            // Restart the animation loop
+            if (!animationRunning) {
+                animationRunning = true;
+                animate();
+            }
+        }
+
+        // Function to increase the cube's size
+        function increaseCubeSize() {
+            cube.scale.x += 0.1;
+            cube.scale.y += 0.1;
+            cube.scale.z += 0.1;
+        }
+
+        // Function to check for collisions with more accurate bounding boxes
+        function checkCollisions() {
+            const cubeBox = new THREE.Box3().setFromObject(cube);
+
+            for (let i = 0; i < fallingObjects.length; i++) {
+                const obj = fallingObjects[i];
+                const objBox = new THREE.Box3().setFromObject(obj);
+
+                // Debug: Visualize the bounding boxes (optional)
+                // const cubeHelper = new THREE.Box3Helper(cubeBox, 0xffff00);
+                // const objHelper = new THREE.Box3Helper(objBox, 0xff00ff);
+                // scene.add(cubeHelper);
+                // scene.add(objHelper);
+
+                if (cubeBox.intersectsBox(objBox)) {
+                    if (cube.material.color.getHex() === obj.material.color.getHex()) {
+                        // Colors match, award extra points and increase cube size
+                        score += 5; // Award extra points
+                        updateScoreDisplay();
+                        increaseCubeSize(); // Increase cube size
+                        scene.remove(obj);
+                        fallingObjects.splice(i, 1);
+                    } else {
+                        // Colors don't match, game over
+                        gameOver();
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        // Handle game over state
+        function gameOver() {
+            animationRunning = false;
+            alert('Game Over! Click "Restart Game" to play again.');
+        }
+
+        // Modify the animation loop
+        let animationRunning = true;
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Update falling objects
+            updateFallingObjects();
+
+            // Check for collisions
+            if (checkCollisions()) {
+                return; // Stop the game loop if a collision is detected
+            }
+
+            // Render the scene from the perspective of the camera
+            renderer.render(scene, camera);
+        }
+
+        // Ensure the animation loop is started only once
+        animate();
+
+        // Increase difficulty over time
+        setInterval(() => {
+            fallingSpeed += 0.002; // Smaller increment to slow down the increase in speed
+            if (creationInterval > 500) { // Ensure the interval doesn't decrease too much
+                creationInterval -= 50; // Decrease creation interval
+                clearInterval(fallingObjectInterval);
+                fallingObjectInterval = setInterval(createFallingObject, creationInterval);
+            }
+        }, 10000); // Increase the interval to adjust difficulty less frequently
+
+        // Create a new falling object at the current interval
+        let fallingObjectInterval = setInterval(createFallingObject, creationInterval);
+    </script>
+</body>
+</html>
