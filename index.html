@@ -210,7 +210,7 @@
             fallingSpeed = 0.01;
             creationInterval = 1000;
 
-            // Restart the falling object creation interval
+            // Clear and restart the falling object creation interval
             clearInterval(fallingObjectInterval);
             fallingObjectInterval = setInterval(createFallingObject, creationInterval);
 
@@ -231,19 +231,13 @@
             cube.scale.z += 0.1;
         }
 
-        // Function to check for collisions with more accurate bounding boxes
+        // Modify the collision detection to handle game over
         function checkCollisions() {
             const cubeBox = new THREE.Box3().setFromObject(cube);
 
             for (let i = 0; i < fallingObjects.length; i++) {
                 const obj = fallingObjects[i];
                 const objBox = new THREE.Box3().setFromObject(obj);
-
-                // Debug: Visualize the bounding boxes (optional)
-                // const cubeHelper = new THREE.Box3Helper(cubeBox, 0xffff00);
-                // const objHelper = new THREE.Box3Helper(objBox, 0xff00ff);
-                // scene.add(cubeHelper);
-                // scene.add(objHelper);
 
                 if (cubeBox.intersectsBox(objBox)) {
                     if (cube.material.color.getHex() === obj.material.color.getHex()) {
@@ -263,15 +257,11 @@
             return false;
         }
 
-        // Handle game over state
-        function gameOver() {
-            animationRunning = false;
-            alert('Game Over! Click "Restart Game" to play again.');
-        }
-
         // Modify the animation loop
         let animationRunning = true;
         function animate() {
+            if (!animationRunning) return;
+
             requestAnimationFrame(animate);
 
             // Update falling objects
@@ -288,16 +278,6 @@
 
         // Ensure the animation loop is started only once
         animate();
-
-        // Increase difficulty over time
-        setInterval(() => {
-            fallingSpeed += 0.002; // Smaller increment to slow down the increase in speed
-            if (creationInterval > 500) { // Ensure the interval doesn't decrease too much
-                creationInterval -= 50; // Decrease creation interval
-                clearInterval(fallingObjectInterval);
-                fallingObjectInterval = setInterval(createFallingObject, creationInterval);
-            }
-        }, 10000); // Increase the interval to adjust difficulty less frequently
 
         // Create a new falling object at the current interval
         let fallingObjectInterval = setInterval(createFallingObject, creationInterval);
