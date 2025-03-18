@@ -74,6 +74,7 @@
         document.addEventListener('touchstart', (event) => {
             touchStartX = event.touches[0].clientX;
             touchStartY = event.touches[0].clientY;
+            console.log('Touch start:', touchStartX, touchStartY);
         });
 
         document.addEventListener('touchmove', (event) => {
@@ -87,13 +88,15 @@
             cube.position.x += deltaX * 0.01; // Adjust sensitivity as needed
             cube.position.y -= deltaY * 0.01; // Adjust sensitivity as needed
 
+            console.log('Touch move:', deltaX, deltaY);
+
             // Update start positions for the next move
             touchStartX = touchEndX;
             touchStartY = touchEndY;
         });
 
         document.addEventListener('touchend', () => {
-            // Optionally handle touch end if needed
+            console.log('Touch end');
         });
 
         // Array to hold falling objects
@@ -175,6 +178,24 @@
         // Attach the reset function to the button
         restartButton.addEventListener('click', resetGame);
 
+        // Create a game over message element
+        const gameOverElement = document.createElement('div');
+        gameOverElement.style.position = 'absolute';
+        gameOverElement.style.top = '50%';
+        gameOverElement.style.left = '50%';
+        gameOverElement.style.transform = 'translate(-50%, -50%)';
+        gameOverElement.style.color = 'red';
+        gameOverElement.style.fontSize = '30px';
+        gameOverElement.style.display = 'none'; // Initially hidden
+        gameOverElement.innerHTML = 'Game Over! Click "Restart Game" to play again.';
+        document.body.appendChild(gameOverElement);
+
+        // Handle game over state
+        function gameOver() {
+            animationRunning = false;
+            gameOverElement.style.display = 'block'; // Show game over message
+        }
+
         // Function to reset the game
         function resetGame() {
             // Remove all falling objects from the scene
@@ -192,6 +213,9 @@
             // Restart the falling object creation interval
             clearInterval(fallingObjectInterval);
             fallingObjectInterval = setInterval(createFallingObject, creationInterval);
+
+            // Hide game over message
+            gameOverElement.style.display = 'none';
 
             // Restart the animation loop
             if (!animationRunning) {
